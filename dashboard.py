@@ -1,7 +1,7 @@
 """
-kelompok dkp
+Kelompok DKP:
 Dhafa Nur Fadhilah - 1301213263
-Ratin kani - 1301213269
+Ratin Kani - 1301213269
 Putri Maharani - 1301213093
 """
 # Imports
