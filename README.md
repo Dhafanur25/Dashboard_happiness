@@ -11,3 +11,18 @@ Follow these steps to set up and run the dashboard:
    git clone <repository_url>
 
 2. Create a Virtual Environment (Optional but Recommended):
+ - Windows:
+   ```bash
+   python -m venv venv
+   .\venv\Scripts\activate
+   
+ - macOS/Linux:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+3. Install Dependencies:
+   ```bash
+   pip install -r requirements.txt
+4. Run the Dashboard:
+   ```bash
+   streamlit run dashboard.py
