@@ -353,11 +353,9 @@ with colDropdown[0]:
 with colBarchart:
     filtered_data_barchart = filtered_data.copy()
 
-    if selected_year != "All":
-        filtered_data_barchart = filtered_data_barchart[filtered_data['Year'] == int(selected_year)]
-        
     if selected_region != "All":
         if selected_year != "All":
+            filtered_data_barchart = filtered_data_barchart[filtered_data['Year'] == int(selected_year)]
             suffix = f" in {selected_region} ({selected_year})"
         else:
             suffix = f" in {selected_region}"
@@ -402,9 +400,9 @@ with colBarchart:
     st.markdown(
         """
         <div style="text-align: justify;">
-        This bar chart highlights the top contributors to happiness from the World Happiness Report. Family (Social Support) leads at 22.86%, 
-        emphasizing the value of strong social connections. Economy (GDP per Capita) at 21.39% and Health (Life Expectancy) at 21.32% underline 
-        the critical roles of financial stability and physical well-being in fostering life satisfaction. Together, these factors highlight the 
+        This bar chart highlights the top contributors to happiness from the World Happiness Report. Economy (GDP per Capita) leads at 23.09%, 
+        emphasizing the importance of financial stability. Health (Life Expectancy) follows at 22.02%, underlining the critical role of physical 
+        well-being, while Family (Social Support) at 21.54% highlights the value of strong social connections. Together, these factors form the 
         foundation of societal happiness.
         </div>
         """,
