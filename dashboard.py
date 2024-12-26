@@ -41,18 +41,35 @@ df['Happiness Score'] = pd.to_numeric(df['Happiness Score'], errors='coerce')
 
 # Sidebar filters
 st.sidebar.title("Filters")
+
 regions = df['Country'].unique()
 all_regions = ["All"] + list(regions)
 selected_region = st.sidebar.selectbox("Select a Country:", all_regions)
-years = sorted(df['Year'].unique())
-selected_year = st.sidebar.slider("Select a Year:", min_value=int(min(years)), max_value=int(max(years)), value=int(max(years)))
+
+if selected_region == "All":
+    years = sorted(df['Year'].unique(), reverse=True)
+else:
+    years = sorted(df[df['Country'] == selected_region]['Year'].unique(), reverse=True)
+all_years = ["All"] + [str(year) for year in years]
+selected_year = st.sidebar.selectbox("Select a Year:", all_years)
+
+# Make df copy of the filtered data
+filtered_data = df.copy()
+filtered_data_map = df.copy()
 
 # Filter data based on selection
-filtered_data = df.copy()
 if selected_region != "All":
     filtered_data = filtered_data[filtered_data['Country'] == selected_region]
-filtered_data = filtered_data[filtered_data['Year'] == selected_year]
-
+        
+# Filter data based on selection for map
+if selected_year != "All":
+    filtered_data_map = filtered_data_map[filtered_data_map['Year'] == int(selected_year)]
+else:
+    filtered_data_map = (
+        filtered_data_map.groupby("Alpha-3_code", as_index=False)
+        .agg({"Happiness Score": "mean"})
+    )
+    
 # Settings for the Interactive Map
 # Load map shape dataset
 @st.cache_data
@@ -62,7 +79,7 @@ def load_shapefile():
 world = load_shapefile()
 world = world.rename(columns={"SOV_A3": "Alpha-3_code"})
 world = world[world['ADMIN'] != 'Greenland'] # Mistake in the world dataset where the Greenland is set to Denmark
-merged = world.merge(filtered_data[['Alpha-3_code', 'Happiness Score']], on="Alpha-3_code", how="left")
+merged = world.merge(filtered_data_map[['Alpha-3_code', 'Happiness Score']], on="Alpha-3_code", how="left")
 
 def get_country_color(score):
     if pd.isna(score):
@@ -118,7 +135,7 @@ view_state = pdk.ViewState(
     longitude=lon_center,
     zoom=zoom_level,
     pitch=2,
-    min_zoom=0.4,
+    min_zoom=0.1,
     max_zoom=4,
 )
 
@@ -128,8 +145,7 @@ map_style = {
 }
 
 tooltip_html = f"""
-    <b>Country:</b> {{NAME}}<br>
-    <b>Year:</b> {selected_year}<br>
+    <b>Country:</b> {{NAME}} ({selected_year if selected_year != "All" else "All Year"})<br>
     <b>Happiness Score:</b> {{Happiness Score Display}}
 """
 
@@ -332,22 +348,33 @@ with colDropdown[0]:
     dimensions = ['Economy (GDP per Capita)', 'Family (Social support)', 'Health (Life Expectancy)', 'Freedom to make life choices', 'Generosity', 'Trust (Government Corruption)']
     selected_dimension = st.selectbox("Select a Dimension to Compare with Happiness Score:", dimensions)
 
+
 # Ranked Dimensions with Barchart
 with colBarchart:
-    correlations = {dim: filtered_data[dim].corr(filtered_data['Happiness Score']) for dim in dimensions}
+    filtered_data_barchart = filtered_data.copy()
 
+    if selected_year != "All":
+        filtered_data_barchart = filtered_data_barchart[filtered_data['Year'] == int(selected_year)]
+        
     if selected_region != "All":
-        region_suffix = f" in {selected_region}"
+        if selected_year != "All":
+            suffix = f" in {selected_region} ({selected_year})"
+        else:
+            suffix = f" in {selected_region}"
     else:
-        region_suffix = ""
-
-    filtered_data['Country - Year'] = filtered_data['Country'] + " (" + filtered_data['Year'].astype(str) + ")"
+        suffix = ""
+    
+    # Make a new df to calc the correlations and sort
+    correlations = {
+        dim: filtered_data_barchart[dim].iloc[0]
+        if len(filtered_data_barchart) == 1 else filtered_data_barchart[dim].corr(filtered_data_barchart['Happiness Score']) 
+        for dim in dimensions
+    }
     correlation_df = pd.DataFrame(list(correlations.items()), columns=['Dimension', 'Correlation'])
     correlation_df['Percentage Impact'] = (correlation_df['Correlation'].abs() / correlation_df['Correlation'].abs().sum()) * 100
     correlation_df = correlation_df.sort_values(by='Percentage Impact', ascending=True)
 
-    
-    bar_title = f"Dimension Impact on Happiness Score{region_suffix}"
+    bar_title = f"Dimension Impact on Happiness Score{suffix}"
     bar_fig = px.bar(
         correlation_df,
         x='Percentage Impact',
@@ -364,11 +391,12 @@ with colBarchart:
         insidetextanchor='middle',
         textfont=dict(family="Arial, sans-serif", size=14, color="white"),
     )
-    correlation_df.loc[:, 'text_position'] = correlation_df['Percentage Impact'].apply(lambda value: 'inside' if value >= 3 else 'outside')
-    correlation_df.loc[:, 'text_color'] = correlation_df['Percentage Impact'].apply(lambda value: 'white' if value >= 3 else 'black')
+    correlation_df.loc[:, 'text_position'] = correlation_df['Percentage Impact'].apply(lambda value: 'inside' if value >= 7 else 'outside')
+    correlation_df.loc[:, 'text_color'] = correlation_df['Percentage Impact'].apply(lambda value: 'white' if value >= 7 else 'black')
     bar_fig.update_traces(
         textposition=correlation_df['text_position'],
         textfont=dict(color=correlation_df['text_color']),
+        hoverinfo='none'
     )
     st.plotly_chart(bar_fig)
     st.markdown(
@@ -382,10 +410,16 @@ with colBarchart:
         """,
         unsafe_allow_html=True
     )
-
+    
 
 # Scatter Plot
 with colScatterplot:
+    if selected_region != "All":
+        region_suffix = f" in {selected_region}"
+    else:
+        region_suffix = ""
+        
+    filtered_data['Country - Year'] = filtered_data['Country'] + " (" + filtered_data['Year'].astype(str) + ")"
     scatter_title = f"Happiness Score vs {selected_dimension}{region_suffix}"
     scatter_fig = px.scatter(
         filtered_data,
