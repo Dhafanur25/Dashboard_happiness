@@ -19,16 +19,28 @@ st.set_page_config(
     layout="wide"
 )
 
-# Title and subheader
+# Title and subheaders
 st.title("Happiness Index: A Global Analysis")
 st.markdown(
     """
-    <div style="text-align: justify;font-size: 14px;    ">
+    <div style="text-align: justify;font-size: 14px;">
     The data used in this analysis is sourced from <a href="https://worldhappiness.report/" target="_blank" style="color: blue;">https://worldhappiness.report/</a>.
     </div>
     """,
     unsafe_allow_html=True
 )
+
+st.markdown(
+    """
+    <div style="text-align: justify;font-size: 14px;">
+    Dhafa Nur Fadhilah &emsp; (1301213263)<br>
+    Ratin Kani &emsp;&emsp;&emsp;&emsp;&emsp;(1301213269)<br>
+    Putri Maharani &emsp;&emsp;&emsp; (1301213093)<br>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 st.markdown("<br>", unsafe_allow_html=True)  
 
 # Load Happiness Dataset
